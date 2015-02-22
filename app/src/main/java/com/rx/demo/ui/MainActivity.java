@@ -20,6 +20,7 @@ import javax.inject.Inject;
 
 import rx.Observable;
 import rx.android.events.OnClickEvent;
+import rx.android.observables.ViewObservable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
@@ -27,19 +28,21 @@ import static rx.android.observables.ViewObservable.clicks;
 
 
 public class MainActivity extends DemoBaseActivity {
+
     @Inject
-    public Github api;
+    protected Github api;
+
     @Activity
     @Inject
-    Context context;
+    protected Context context;
 
     private Observable<ArrayList<User>> userObservable;
 
     private Observable<User> randomUserObservable;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
 
         userObservable = api.users()
@@ -56,19 +59,19 @@ public class MainActivity extends DemoBaseActivity {
         randomUserObservable.subscribe(this::updateSecondUser);
         randomUserObservable.subscribe(this::updateThirdUser);
 
-        clicks(view(R.id.close1))
+        ViewObservable.clicks(view(R.id.close1))
                 .debounce(1, TimeUnit.SECONDS)
                 .flatMap(onClickEvent -> randomUserObservable)
                 .onErrorReturn(throwable -> new User())
                 .subscribe(this::updateFirstUser);
 
-        clicks(view(R.id.close2))
+        ViewObservable.clicks(view(R.id.close2))
                 .debounce(1, TimeUnit.SECONDS)
                 .flatMap(onClickEvent -> randomUserObservable)
                 .onErrorReturn(throwable -> new User())
                 .subscribe(this::updateSecondUser);
 
-        clicks(view(R.id.close3))
+        ViewObservable.clicks(view(R.id.close3))
                 .debounce(1, TimeUnit.SECONDS)
                 .flatMap(onClickEvent -> randomUserObservable)
                 .doOnError(throwable -> {
@@ -76,27 +79,31 @@ public class MainActivity extends DemoBaseActivity {
                 })
                 .subscribe(this::updateThirdUser);
 
-        Observable<OnClickEvent> refreshClick = clicks(findViewById(R.id.btnRefresh));
+        //does this refreshClick mean that we'll fetch users 3 times, and shuffle each? Doesn't that seem inefficient?
+        Observable<OnClickEvent> refreshClick = ViewObservable.clicks(findViewById(R.id.btnRefresh));
         refreshClick.flatMap(onClickEvent -> randomUserObservable).subscribe(this::updateFirstUser);
         refreshClick.flatMap(onClickEvent -> randomUserObservable).subscribe(this::updateSecondUser);
         refreshClick.flatMap(onClickEvent -> randomUserObservable).subscribe(this::updateThirdUser);
     }
 
-
-    private void updateThirdUser(User user) {
-        bindData(R.id.name3, R.id.avatar3, user);
-    }
-
-    private void updateSecondUser(User user) {
-        bindData(R.id.name2, R.id.avatar2, user);
-    }
-
     private void updateFirstUser(User user) {
+
         bindData(R.id.name1, R.id.avatar1, user);
     }
 
-    private void bindData(int textviewID, int imageViewId, User user) {
-        ((TextView) view(textviewID)).setText(user.login);
+    private void updateSecondUser(User user) {
+
+        bindData(R.id.name2, R.id.avatar2, user);
+    }
+
+    private void updateThirdUser(User user) {
+
+        bindData(R.id.name3, R.id.avatar3, user);
+    }
+
+    private void bindData(int textViewID, int imageViewId, User user) {
+
+        ((TextView) view(textViewID)).setText(user.login);
         Picasso.with(context).load(user.avatar_url).into((ImageView) view(imageViewId));
     }
 }
